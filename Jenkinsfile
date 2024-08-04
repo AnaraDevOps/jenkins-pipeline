@@ -8,7 +8,7 @@ pipeline {
     }
 
     tools {
-        git 'Default' // Ensure this matches the name of the Git installation in Global Tool Configuration
+        git 'Default' 
     }
 
     stages {
@@ -33,13 +33,16 @@ pipeline {
                     if (env.BRANCH_NAME == 'main') {
                         env.PORT = '3000'
                         env.DOCKER_IMAGE = 'nodemain:v1.0'
-                        env.LOGO_PATH = './src/logo.svg'
+                        env.LOGO_PATH = 'src\\logo.svg' 
                     } else if (env.BRANCH_NAME == 'dev') {
                         env.PORT = '3001'
                         env.DOCKER_IMAGE = 'nodedev:v1.0'
-                        env.LOGO_PATH = './src/logo.svg'
+                        env.LOGO_PATH = 'src\\logo.svg' 
                     }
-                    bat "copy ${env.LOGO_PATH} ./public/logo.svg"
+                    echo "LOGO_PATH: ${env.LOGO_PATH}"
+                    echo "Checking if the logo file exists..."
+                    bat "if exist ${env.LOGO_PATH} (echo File exists) else (echo File not found && exit 1)"
+                    bat "copy ${env.LOGO_PATH} public\\logo.svg"
                     bat "docker build -t ${env.DOCKER_IMAGE} ."
                 }
             }
@@ -48,8 +51,8 @@ pipeline {
             steps {
                 script {
                     bat """
-                    docker ps -q --filter "ancestor=${env.DOCKER_IMAGE}" | foreach ($_) { docker stop $_ }
-                    docker ps -a -q --filter "ancestor=${env.DOCKER_IMAGE}" | foreach ($_) { docker rm $_ }
+                    for /F "tokens=*" %%i in ('docker ps -q --filter "ancestor=${env.DOCKER_IMAGE}"') do docker stop %%i
+                    for /F "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=${env.DOCKER_IMAGE}"') do docker rm %%i
                     """
                     if (env.BRANCH_NAME == 'main') {
                         bat "docker run -d --expose 3000 -p 3000:3000 ${env.DOCKER_IMAGE}"
