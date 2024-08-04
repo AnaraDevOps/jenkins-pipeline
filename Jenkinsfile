@@ -38,21 +38,21 @@ pipeline {
                     if (env.BRANCH_NAME == 'main') {
                         PORT = '3000'
                         DOCKER_IMAGE = 'nodemain:v1.0'
-                        LOGO_PATH = 'src/logo.svg'
+                        LOGO_PATH = 'src\\logo.svg'
                     } else if (env.BRANCH_NAME == 'dev') {
                         PORT = '3001'
                         DOCKER_IMAGE = 'nodedev:v1.0'
-                        LOGO_PATH = 'src/logo.svg'
+                        LOGO_PATH = 'src\\logo.svg'
                     }
                     echo "LOGO_PATH: ${LOGO_PATH}"
                     echo "Checking if the logo file exists..."
-                    sh "test -f ${LOGO_PATH} && echo File exists || (echo File not found && exit 1)"
-                    sh "cp ${LOGO_PATH} public/logo.svg"
+                    bat "if exist ${LOGO_PATH} (echo File exists) else (echo File not found && exit 1)"
+                    bat "copy ${LOGO_PATH} public\\logo.svg"
                     echo "Checking Docker status..."
-                    sh "docker --version"
-                    sh "docker info"
+                    bat "docker --version"
+                    bat "docker info"
                     echo "Building Docker image..."
-                    sh "docker build -t ${DOCKER_IMAGE} ."
+                    bat "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
