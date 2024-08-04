@@ -1,62 +1,30 @@
 pipeline {
     agent any
-    environment {
-        NODE_ENV = 'production'
-        PORT = ''
-        DOCKER_IMAGE = ''
-        LOGO_PATH = ''
-    }
-
-    tools {
-        git 'Default' // Ensure this matches the name of the Git installation in Global Tool Configuration
-    }
-
     stages {
-        stage('Checkout SCM') {
+        // stage('Hello') {
+        //    steps {
+        //        echo "Create 2Gb file for build ${currentBuild.number}:"
+        //        sh 'dd if=/dev/urandom of="block_${BUILD_NUMBER}" bs=1M count=1024'
+        //        echo "Exit"
+        //    }
+        //}
+        stage('Build & Check') {
             steps {
-                checkout scm
+                sh 'echo "hello world" >> logs.txt'
+                sh 'tar cvzf archive.tar logs.txt'
+                // sh 'zip archive.zip log.txt'
             }
         }
-        stage('Build') {
-            steps {
-                sh 'npm install'
-            }
-        }
-        stage('Test') {
-            steps {
-                sh 'npm test'
-            }
-        }
-        stage('Docker Build') {
-            steps {
-                script {
-                    if (env.BRANCH_NAME == 'main') {
-                        env.PORT = '3000'
-                        env.DOCKER_IMAGE = 'nodemain:v1.0'
-                        env.LOGO_PATH = './src/logo.svg'
-                    } else if (env.BRANCH_NAME == 'dev') {
-                        env.PORT = '3001'
-                        env.DOCKER_IMAGE = 'nodedev:v1.0'
-                        env.LOGO_PATH = './src/logo.svg'
-                    }
-                    sh "cp ${env.LOGO_PATH} ./public/logo.svg"
-                    sh "docker build -t ${env.DOCKER_IMAGE} ."
-                }
-            }
-        }
-        stage('Deploy') {
-            steps {
-                script {
-                    sh "docker ps -q --filter 'ancestor=${env.DOCKER_IMAGE}' | xargs --no-run-if-empty docker stop"
-                    sh "docker ps -a -q --filter 'ancestor=${env.DOCKER_IMAGE}' | xargs --no-run-if-empty docker rm"
-                    if (env.BRANCH_NAME == 'main') {
-                        sh "docker run -d --expose 3000 -p 3000:3000 ${env.DOCKER_IMAGE}"
-                    } else if (env.BRANCH_NAME == 'dev') {
-                        sh "docker run -d --expose 3001 -p 3001:3000 ${env.DOCKER_IMAGE}"
-                    }
-                }
+    }
+    post {
+        // Clean after build
+        always {
+            archiveArtifacts artifacts: 'logs.txt', fingerprint:false, allowEmptyArchive: 'true'
+            archiveArtifacts artifacts: 'archive.*', fingerprint:false, allowEmptyArchive: 'true'
+            dir("../") {
+                deleteDir()
             }
         }
     }
 }
-
+ 
