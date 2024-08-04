@@ -1,37 +1,62 @@
 pipeline {
     agent any
-
-    stages {
-        // Uncomment the "Hello" stage if needed
-        // stage('Hello') {
-        //    steps {
-        //        echo "Create 2Gb file for build ${currentBuild.number}:"
-        //        sh 'dd if=/dev/urandom of="block_${BUILD_NUMBER}" bs=1M count=1024'
-        //        echo "Exit"
-        //    }
-        //}
-        stage('Build & Check') {
-            steps {
-                bat 'echo "hello world" >> logs.txt'
-                bat 'tar cvzf archive.tar logs.txt'
-                // Uncomment the following line if you want to create a zip archive as well
-                // bat 'powershell Compress-Archive -Path logs.txt -DestinationPath archive.zip'
-            }
-        }
+    environment {
+        NODE_ENV = 'production'
+        PORT = ''
+        DOCKER_IMAGE = ''
+        LOGO_PATH = ''
     }
 
-    post {
-        // Clean after build
-        always {
-            // Archive the logs.txt file
-            archiveArtifacts artifacts: 'logs.txt', fingerprint: false, allowEmptyArchive: true
+    tools {
+        git 'Default' // Ensure this matches the name of the Git installation in Global Tool Configuration
+    }
 
-            // Archive any files with names starting with "archive."
-            archiveArtifacts artifacts: 'archive.*', fingerprint: false, allowEmptyArchive: true
-
-            // Use relative path for deleteDir() to avoid unintended directory deletions
-            dir("${env.WORKSPACE}") {
-                deleteDir()
+    stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build') {
+            steps {
+                bat 'npm install'
+            }
+        }
+        stage('Test') {
+            steps {
+                bat 'npm test'
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                script {
+                    if (env.BRANCH_NAME == 'main') {
+                        env.PORT = '3000'
+                        env.DOCKER_IMAGE = 'nodemain:v1.0'
+                        env.LOGO_PATH = './src/logo.svg'
+                    } else if (env.BRANCH_NAME == 'dev') {
+                        env.PORT = '3001'
+                        env.DOCKER_IMAGE = 'nodedev:v1.0'
+                        env.LOGO_PATH = './src/logo.svg'
+                    }
+                    bat "copy ${env.LOGO_PATH} ./public/logo.svg"
+                    bat "docker build -t ${env.DOCKER_IMAGE} ."
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script {
+                    bat """
+                    docker ps -q --filter "ancestor=${env.DOCKER_IMAGE}" | foreach ($_) { docker stop $_ }
+                    docker ps -a -q --filter "ancestor=${env.DOCKER_IMAGE}" | foreach ($_) { docker rm $_ }
+                    """
+                    if (env.BRANCH_NAME == 'main') {
+                        bat "docker run -d --expose 3000 -p 3000:3000 ${env.DOCKER_IMAGE}"
+                    } else if (env.BRANCH_NAME == 'dev') {
+                        bat "docker run -d --expose 3001 -p 3001:3000 ${env.DOCKER_IMAGE}"
+                    }
+                }
             }
         }
     }
