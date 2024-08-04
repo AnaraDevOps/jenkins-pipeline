@@ -59,10 +59,12 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    echo "Stopping and removing any existing containers..."
                     bat """
-                    for /F "tokens=*" %%i in ('docker ps -q --filter "ancestor=${DOCKER_IMAGE}"') do docker stop %%i
-                    for /F "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=${DOCKER_IMAGE}"') do docker rm %%i
+                    for /F "tokens=*" %i in ('docker ps -q --filter "ancestor=${DOCKER_IMAGE}"') do docker stop %i || echo No container to stop
+                    for /F "tokens=*" %i in ('docker ps -a -q --filter "ancestor=${DOCKER_IMAGE}"') do docker rm %i || echo No container to remove
                     """
+                    echo "Running the Docker container..."
                     if (env.BRANCH_NAME == 'main') {
                         bat "docker run -d --expose 3000 -p 3000:3000 ${DOCKER_IMAGE}"
                     } else if (env.BRANCH_NAME == 'dev') {
