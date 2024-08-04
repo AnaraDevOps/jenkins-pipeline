@@ -6,6 +6,11 @@ pipeline {
         DOCKER_IMAGE = ''
         LOGO_PATH = ''
     }
+
+    tools {
+        git 'Default' // Ensure this matches the name of the Git installation in Global Tool Configuration
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
