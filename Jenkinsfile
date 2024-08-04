@@ -61,8 +61,8 @@ pipeline {
                 script {
                     echo "Stopping and removing any existing containers..."
                     bat """
-                    for /F "tokens=*" %i in ('docker ps -q --filter "ancestor=${DOCKER_IMAGE}"') do docker stop %i || echo No container to stop
-                    for /F "tokens=*" %i in ('docker ps -a -q --filter "ancestor=${DOCKER_IMAGE}"') do docker rm %i || echo No container to remove
+                    FOR /F "tokens=*" %%i IN ('docker ps -q --filter "ancestor=${DOCKER_IMAGE}"') DO docker stop %%i || echo No container to stop
+                    FOR /F "tokens=*" %%i IN ('docker ps -a -q --filter "ancestor=${DOCKER_IMAGE}"') DO docker rm %%i || echo No container to remove
                     """
                     echo "Running the Docker container..."
                     if (env.BRANCH_NAME == 'main') {
