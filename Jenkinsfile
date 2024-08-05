@@ -2,6 +2,9 @@ pipeline {
     agent any
     environment {
         NODE_ENV = 'production'
+        PORT = ''
+        DOCKER_IMAGE = ''
+        LOGO_PATH = ''
     }
 
     tools {
@@ -53,8 +56,12 @@ pipeline {
                 script {
                     echo "Stopping and removing any existing containers..."
                     bat """
-                    FOR /F "tokens=*" %%i IN ('docker ps -q --filter "ancestor=${env.DOCKER_IMAGE}"') DO docker stop %%i || echo No container to stop
-                    FOR /F "tokens=*" %%i IN ('docker ps -a -q --filter "ancestor=${env.DOCKER_IMAGE}"') DO docker rm %%i || echo No container to remove
+                    for /F "tokens=*" %%i in ('docker ps -q --filter "ancestor=${env.DOCKER_IMAGE}"') do (
+                        docker stop %%i
+                    )
+                    for /F "tokens=*" %%i in ('docker ps -a -q --filter "ancestor=${env.DOCKER_IMAGE}"') do (
+                        docker rm %%i
+                    )
                     """
                     echo "Running the Docker container..."
                     if (env.BRANCH_NAME == 'main') {
@@ -62,6 +69,7 @@ pipeline {
                     } else if (env.BRANCH_NAME == 'dev') {
                         bat "docker run -d --expose 3001 -p 3001:3000 ${env.DOCKER_IMAGE}"
                     }
+                    bat "docker ps -a"
                 }
             }
         }
