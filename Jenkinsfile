@@ -67,7 +67,6 @@ pipeline {
                         bat "docker run -d --expose 3001 -p 3001:3000 ${env.DOCKER_IMAGE}"
                     }
                     bat "docker ps -a"
-                  }
                 }
             }
         }
